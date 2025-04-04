@@ -11,14 +11,33 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
+import httpService from "./services/httpService";
 
 const RegisterScreen = () => {
+
+  const SERVER_URL = 'http://10.50.240.44:3000'; // Replace with your server URL - ipconfig - Endereço IPv4
+
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  
+  const sendForm = async () => {
+    const json = {
+      name: name,
+      email: email,
+      cpf: cpf,
+      password: password,
+      confirmPassword: confirmPassword,
+    };
+  
+    const result = await httpService.post(`${SERVER_URL}/api/users/register`, json);
+    console.log("Result: ", result)
+  }
+  
+
   interface Errors {
     name?: string;
     email?: string;
@@ -48,9 +67,9 @@ const RegisterScreen = () => {
     return regex.test(cpf);
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     let newErrors: Errors = {};
-
+  
     if (name.trim().length < 2) {
       newErrors.name = "O nome deve ter pelo menos 2 caracteres";
     }
@@ -66,15 +85,25 @@ const RegisterScreen = () => {
     if (password !== confirmPassword) {
       newErrors.confirmPassword = "As senhas não coincidem";
     }
-
+  
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-
-    Alert.alert("Sucesso", "Conta criada com sucesso!");
-    router.push("/login");
+  
+    try {
+      await sendForm();
+      Alert.alert("Sucesso", "Conta criada com sucesso!");
+      router.push("/login");
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        Alert.alert("Erro", error.response.data.message);
+      } else {
+        Alert.alert("Erro", "Erro ao cadastrar usuário.");
+      }
+    }
   };
+  
 
   return (
     <LinearGradient
