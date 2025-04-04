@@ -5,16 +5,48 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
+import httpService from "./services/httpService";
 
 const LoginScreen = () => {
+
+  const SERVER_URL = 'http://10.50.240.44:3000';
+
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const sendLogin = async () => {
+    const json = {
+      email: email,
+      password: password,
+    };
+  
+    try {
+      const result = await httpService.post(`${SERVER_URL}/api/users/login`, json);
+      
+
+      console.log("✅ Login realizado com sucesso!");
+      console.log("Usuário logado:", result.user);
+  
+      Alert.alert("Login realizado", `Bem-vindo, ${result.user.name}!`);
+
+    } catch (error: any) {
+      console.error("Erro no login:", error);
+  
+      if (error.response?.data?.message) {
+        Alert.alert("Erro", error.response.data.message);
+      } else {
+        Alert.alert("Erro", "Falha ao fazer login.");
+      }
+    }
+  };
+  
   interface Errors {
     email?: string;
     password?: string;
@@ -37,7 +69,7 @@ const LoginScreen = () => {
   };
 
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     let newErrors: Errors = {};
 
     if (!validateEmail(email)) {
@@ -52,7 +84,16 @@ const LoginScreen = () => {
       setErrors(newErrors);
       return;
     }
-    router.push("/home");
+    try {
+      await sendLogin();
+      router.push("/home");
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        Alert.alert("Erro", error.response.data.message);
+      } else {
+        Alert.alert("Erro", "Erro ao cadastrar usuário.");
+      }
+    }
   };
 
   return (
