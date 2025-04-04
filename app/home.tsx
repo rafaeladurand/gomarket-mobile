@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Font from "expo-font";
 import { useCart } from "./cartContext";
+import httpService from "./services/httpService";
 
 const loadFonts = async () => {
   await Font.loadAsync({
@@ -22,126 +23,42 @@ const loadFonts = async () => {
   });
 };
 
-const products = [
-  {
-    id: "1",
-    name: "Açúcar Refinado",
-    price: 5.50,
-    image: "https://zaffari.vtexassets.com/arquivos/ids/251448-800-auto?v=638560676658500000&width=800&height=auto&aspect=true",
-    description: "Açúcar refinado de alta qualidade, ideal para adoçar bebidas e receitas. Pacote de 1kg.",
-  },
-  {
-    id: "2",
-    name: "Café Torrado e Moído",
-    price: 18.90,
-    image: "https://m.media-amazon.com/images/I/61SKJAAoLdL.AC_SX679.jpg",
-    description: "Café torrado e moído de sabor intenso e aroma marcante. Pacote de 500g.",
-  },
-  {
-    id: "3",
-    name: "Sabão em Pó",
-    price: 12.50,
-    image: "https://m.media-amazon.com/images/I/613Rb20r1JL._AC_SX300_SY300_QL70_ML2.jpg",
-    description: "Sabão em pó para roupas, limpa profundamente e mantém as cores vivas. Pacote de 1kg.",
-  },
-  {
-    id: "4",
-    name: "Detergente Líquido",
-    price: 3.80,
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRauK9NXyixQFjq4qSUU5bmbDUbemGVuM9Htg&s",
-    description: "Detergente líquido concentrado para louças. Frasco de 500ml.",
-  },
-  {
-    id: "5",
-    name: "Desodorante Aerosol",
-    price: 15.90,
-    image: "https://m.media-amazon.com/images/I/41R-j+KqMGL.AC_SY300_SX300.jpg",
-    description: "Desodorante aerosol de longa duração. Frasco de 150ml.",
-  },
-  {
-    id: "6",
-    name: "Shampoo",
-    price: 22.00,
-    image: "https://m.media-amazon.com/images/I/51ZYT46FUKL._AC_SX300_SY300_QL70_ML2.jpg",
-    description: "Shampoo hidratante para cabelos sedosos e brilhantes. Frasco de 400ml.",
-  },
-  {
-    id: "7",
-    name: "Sabonete Líquido",
-    price: 9.50,
-    image: "https://d1qhsbqfqfzfzh.cloudfront.net/Custom/Content/Products/76/32/76328_primoderme-sabonete-liquido-200ml-p19580_z1_638349675535075154.jpg",
-    description: "Sabonete líquido suave para limpeza e hidratação da pele. Frasco de 200ml.",
-  },
-  {
-    id: "8",
-    name: "Amaciante de Roupas",
-    price: 14.90,
-    image: "https://prezunic.vtexassets.com/arquivos/ids/187821-800-auto?v=638368828703230000&width=800&height=auto&aspect=true",
-    description: "Amaciante de roupas para maciez e perfume duradouro. Frasco de 2L.",
-  },
-  {
-    id: "9",
-    name: "Farinha de Trigo",
-    price: 6.00,
-    image: "https://static.paodeacucar.com/img/uploads/1/411/579411.png",
-    description: "Farinha de trigo refinada para pães e massas. Pacote de 1kg.",
-  },
-  {
-    id: "10",
-    name: "Biscoito Cream Cracker",
-    price: 4.50,
-    image: "https://www.padariavianney.com.br/web/image/product.product/26610/image_1024/%5B2215%5D%20Biscoito%20Cream%20Cracker%20Aymor%C3%A9%20200g?unique=307ed33",
-    description: "Biscoito cream cracker crocante e leve. Pacote de 200g.",
-  },
-  {
-    id: "11",
-    name: "Manteiga com Sal",
-    price: 10.90,
-    image: "https://www.embare.com.br/wp-content/uploads/2023/08/manteiga-com-sal-200-camponesa-interna.png",
-    description: "Manteiga com sal cremosa e saborosa. Pote de 200g.",
-  },
-  {
-    id: "12",
-    name: "Queijo Mussarela Fatiado",
-    price: 16.50,
-    image: "https://www.extrabom.com.br/uploads/produtos/350x350/162009_20220503111810_thumb_50440_removebg_preview.png",
-    description: "Queijo mussarela fatiado, ideal para sanduíches e lanches. Pacote de 200g.",
-  },
-  {
-    id: "13",
-    name: "Suco de Laranja Integral",
-    price: 8.90,
-    image: "https://static.paodeacucar.com/img/uploads/1/324/666324.png",
-    description: "Suco de laranja integral, sem conservantes. Garrafa de 1L.",
-  },
-  {
-    id: "14",
-    name: "Água Mineral com Gás",
-    price: 2.50,
-    image: "https://muffatosupermercados.vtexassets.com/arquivos/ids/368145-800-auto?v=638307503124200000&width=800&height=auto&aspect=true",
-    description: "Água mineral com gás, pura e refrescante. Garrafa de 500ml.",
-  },
-];
 
 const HomeScreen = () => {
   const router = useRouter();
   const { cart, addToCart } = useCart();
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [search, setSearch] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState(products);
-
-
+  const [filteredProducts, setFilteredProducts] = useState<{ id: string; name: string; image: string; price: number; description: string }[]>([]);
+  const [products, setProducts] = useState<{ id: string; name: string; image: string; price: number; description: string }[]>([]);
+  
+  
   useEffect(() => {
     loadFonts().then(() => setFontsLoaded(true));
   }, []);
 
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const data: { id: string; name: string; image: string; price: number; description: string }[] = await httpService.get("http://10.50.240.44:3000/api/products");
+        setProducts(data);
+      } catch (error) {
+        console.error("Erro ao buscar produtos:", error);
+      }
+    };
+  
+    fetchProducts();
+  }, []);
+
+  
   useEffect(() => {
     setFilteredProducts(
       products.filter((product) =>
         product.name.toLowerCase().includes(search.toLowerCase())
       )
     );
-  }, [search]);
+  }, [search, products]); 
+  
 
 
   return (
@@ -168,7 +85,7 @@ const HomeScreen = () => {
 
       <FlatList
         data={filteredProducts}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => item.id?.toString() || index.toString()}
         numColumns={2}
         contentContainerStyle={styles.listContainer}
         renderItem={({ item }) => (

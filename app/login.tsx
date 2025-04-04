@@ -12,6 +12,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import httpService from "./services/httpService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 const LoginScreen = () => {
 
@@ -29,13 +31,15 @@ const LoginScreen = () => {
   
     try {
       const result = await httpService.post(`${SERVER_URL}/api/users/login`, json);
-      
-
+  
       console.log("✅ Login realizado com sucesso!");
       console.log("Usuário logado:", result.user);
+      console.log("🔐 Token recebido:", result.token); 
+  
+      await AsyncStorage.setItem("token", result.token);
   
       Alert.alert("Login realizado", `Bem-vindo, ${result.user.name}!`);
-
+      return true;
     } catch (error: any) {
       console.error("Erro no login:", error);
   
@@ -44,8 +48,12 @@ const LoginScreen = () => {
       } else {
         Alert.alert("Erro", "Falha ao fazer login.");
       }
+      return false;
     }
   };
+  
+  
+  
   
   interface Errors {
     email?: string;
@@ -71,30 +79,35 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     let newErrors: Errors = {};
-
+  
     if (!validateEmail(email)) {
       newErrors.email = "E-mail inválido";
     }
-
+  
     if (password.length < 6) {
       newErrors.password = "Insira a senha";
     }
-
+  
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
+  
     try {
-      await sendLogin();
-      router.push("/home");
+      const success = await sendLogin();
+      if (success) {
+        router.push("/home");
+      }
+      
     } catch (error: any) {
       if (error.response?.data?.message) {
         Alert.alert("Erro", error.response.data.message);
       } else {
-        Alert.alert("Erro", "Erro ao cadastrar usuário.");
+        Alert.alert("Erro", "Erro ao fazer login.");
       }
     }
   };
+  
 
   return (
     <LinearGradient
