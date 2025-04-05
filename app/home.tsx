@@ -40,7 +40,7 @@ const HomeScreen = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const data: { id: string; name: string; image: string; price: number; description: string }[] = await httpService.get("http://10.50.240.44:3000/api/products");
+        const data: { id: string; name: string; image: string; price: number; description: string }[] = await httpService.get("http://192.168.1.22:3000/api/products");
         setProducts(data);
       } catch (error) {
         console.error("Erro ao buscar produtos:", error);

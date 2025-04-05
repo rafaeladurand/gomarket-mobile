@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
+    "@react-native-async-storage/async-storage": "1.23.1",
     "@react-navigation/bottom-tabs": "^7.2.1",
     "@react-navigation/native": "^7.0.15",
     "@react-navigation/stack": "^7.1.2",
@@ -33,6 +34,8 @@
     "expo-symbols": "~0.2.2",
     "expo-system-ui": "~4.0.8",
     "expo-web-browser": "~14.0.2",
+    "lottie-ios": "^4.5.1",
+    "lottie-react-native": "7.1.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-native": "0.76.7",
@@ -44,7 +47,7 @@
     "react-native-web": "~0.19.13",
     "react-native-webview": "13.12.5",
     "react-navigation-stack": "^2.10.4",
-    "@react-native-async-storage/async-storage": "1.23.1"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

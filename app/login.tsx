@@ -17,7 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LoginScreen = () => {
 
-  const SERVER_URL = 'http://10.50.240.44:3000';
+  const SERVER_URL = 'http://192.168.1.22:3000';
 
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -36,10 +36,16 @@ const LoginScreen = () => {
       console.log("Usuário logado:", result.user);
       console.log("🔐 Token recebido:", result.token); 
   
-      await AsyncStorage.setItem("token", result.token);
+      if (result.user && result.user.id) {
+        await AsyncStorage.setItem("token", result.token);
+        await AsyncStorage.setItem("userId", result.user.id);
   
-      Alert.alert("Login realizado", `Bem-vindo, ${result.user.name}!`);
-      return true;
+        Alert.alert("Login realizado", `Bem-vindo, ${result.user.name}!`);
+        return true;
+      } else {
+        Alert.alert("Erro", "Usuário ou ID inválido na resposta.");
+        return false;
+      }
     } catch (error: any) {
       console.error("Erro no login:", error);
   
@@ -52,9 +58,7 @@ const LoginScreen = () => {
     }
   };
   
-  
-  
-  
+
   interface Errors {
     email?: string;
     password?: string;

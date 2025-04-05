@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext } from "react";
 
 interface Product {
-  id: string;
+  _id: string;
   name: string;
   price: number;
   image: string;
@@ -26,7 +26,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removeFromCart = (id: string) => {
     setCart((prevCart) => {
-      const indexToRemove = prevCart.findIndex(item => item.id === id);
+      const indexToRemove = prevCart.findIndex(item => item._id === id);
       if (indexToRemove !== -1) {
         const updatedCart = [...prevCart];
         updatedCart.splice(indexToRemove, 1);
@@ -35,7 +35,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return prevCart;
     });
   };
-  
 
   const clearCart = () => {
     setCart([]);

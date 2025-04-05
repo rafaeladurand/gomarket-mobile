@@ -9,6 +9,7 @@ import LoginScreen from "./login";
 import RegisterScreen from "./register";
 import SplashScreen from "./splash";
 import { Ionicons } from "@expo/vector-icons";
+import OrderConfirmationScreen from "./confirmation";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -92,6 +93,7 @@ const StackNavigator = () => {
       <Stack.Screen name="splash" component={SplashScreen} />
       <Stack.Screen name="home" component={TabNavigator} />
       <Stack.Screen name="confirmation" component={ConfirmationScreen} />
+      <Stack.Screen name="cart" component={CartScreen} />
       <Stack.Screen name="login" component={LoginScreen} />
       <Stack.Screen name="register" component={RegisterScreen} />
     </Stack.Navigator>
