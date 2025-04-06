@@ -22,7 +22,7 @@ const CartScreen = () => {
   const { cart, removeFromCart, clearCart } = useCart();
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
-  const SERVER_URL = 'http://192.168.1.22:3000';
+  const SERVER_URL = "http://192.168.1.22:3000";
 
   useEffect(() => {
     const loadFonts = async () => {
@@ -48,15 +48,25 @@ const CartScreen = () => {
 
       const json = {
         userId,
-        productIds 
+        productIds,
       };
 
       console.log("Dados do pedido:", json);
-      const result = await httpService.post(`${SERVER_URL}/api/purchases/create`, json);
-      console.log("✅ Pedido realizado com sucesso!", result);
-      
+      const result = await httpService.post(
+        `${SERVER_URL}/api/purchases/create`,
+        json
+      );
+      console.log("📦 Resposta da API:", result);
+
+      const purchaseId = result?.purchase?._id;
+
+      if (!purchaseId) {
+        throw new Error("ID do pedido não encontrado na resposta.");
+      }
+
+      await AsyncStorage.setItem("lastPurchaseId", purchaseId);
       clearCart();
-      router.push("/confirmation");
+      router.push("/payment");
     } catch (error) {
       console.error("Erro ao finalizar pedido:", error);
       Alert.alert("Erro", "Não foi possível finalizar o pedido.");
@@ -107,7 +117,9 @@ const CartScreen = () => {
 
         {cart.length > 0 && (
           <View style={styles.totalContainer}>
-            <Text style={styles.totalText}>Total: R$ {totalPrice.toFixed(2)}</Text>
+            <Text style={styles.totalText}>
+              Total: R$ {totalPrice.toFixed(2)}
+            </Text>
           </View>
         )}
 
