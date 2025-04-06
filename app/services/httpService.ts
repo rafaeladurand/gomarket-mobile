@@ -25,7 +25,7 @@ const service = {
     }
   },
 
-  post: async (url: string , data: any) => {
+  post: async (url: string, data: any) => {
     try {
       const response = await axios.post(url, data);
       return response.data;

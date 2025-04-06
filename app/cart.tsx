@@ -56,6 +56,7 @@ const CartScreen = () => {
         `${SERVER_URL}/api/purchases/create`,
         json
       );
+      
       console.log("📦 Resposta da API:", result);
 
       const purchaseId = result?.purchase?._id;

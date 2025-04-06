@@ -34,7 +34,14 @@ const RegisterScreen = () => {
     };
   
     const result = await httpService.post(`${SERVER_URL}/api/users/register`, json);
-    console.log("Result: ", result)
+    console.log("🟢 Registro realizado com sucesso!");
+    console.table({
+      Nome: result.user?.name || name,
+      Email: result.user?.email || email,
+      CPF: result.user?.cpf || cpf,
+    });
+    console.log("📦 Resposta completa do servidor:", result);
+    console.log("========================================");
   }
   
 

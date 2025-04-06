@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,32 +15,61 @@ import { useFonts } from "expo-font";
 import httpService from "./services/httpService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-
 const LoginScreen = () => {
-
-  const SERVER_URL = 'http://192.168.1.22:3000';
-
+  const SERVER_URL = "http://192.168.1.22:3000";
   const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      await new Promise(resolve => setTimeout(resolve, 2000)); 
+  
+      const token = await AsyncStorage.getItem("token");
+      const userId = await AsyncStorage.getItem("userId");
+  
+      if (token && userId) {
+        try {
+          const res = await httpService.get(`${SERVER_URL}/api/users/${userId}`);
+          const userName = res?.name || "usuário";
+          console.log("Usuário autenticado automaticamente:", res);
+          Alert.alert("Login realizado", `Bem-vindo de volta, ${userName}!`);
+          router.replace("/home");
+        } catch (err) {
+          console.log("Erro ao buscar usuário logado:", err);
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+  
+    checkLoginStatus();
+  }, []);
 
   const sendLogin = async () => {
-    const json = {
-      email: email,
-      password: password,
-    };
+    const json = { email, password };
   
     try {
       const result = await httpService.post(`${SERVER_URL}/api/users/login`, json);
-  
-      console.log("✅ Login realizado com sucesso!");
-      console.log("Usuário logado:", result.user);
-      console.log("🔐 Token recebido:", result.token); 
   
       if (result.user && result.user.id) {
         await AsyncStorage.setItem("token", result.token);
         await AsyncStorage.setItem("userId", result.user.id);
   
+        console.log("🟢 Login realizado com sucesso!");
+        console.log("👤 Usuário:");
+        console.table({
+          ID: result.user.id,
+          Nome: result.user.name,
+          Email: result.user.email,
+        });
+        console.log("🔐 Token:");
+        console.log(result.token);
+        console.log("========================================");
+
         Alert.alert("Login realizado", `Bem-vindo, ${result.user.name}!`);
         return true;
       } else {
@@ -47,8 +77,6 @@ const LoginScreen = () => {
         return false;
       }
     } catch (error: any) {
-      console.error("Erro no login:", error);
-  
       if (error.response?.data?.message) {
         Alert.alert("Erro", error.response.data.message);
       } else {
@@ -57,7 +85,6 @@ const LoginScreen = () => {
       return false;
     }
   };
-  
 
   interface Errors {
     email?: string;
@@ -80,38 +107,41 @@ const LoginScreen = () => {
     return emailRegex.test(email);
   };
 
-
   const handleLogin = async () => {
     let newErrors: Errors = {};
-  
+
     if (!validateEmail(email)) {
       newErrors.email = "E-mail inválido";
     }
-  
+
     if (password.length < 6) {
       newErrors.password = "Insira a senha";
     }
-  
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-  
-    try {
-      const success = await sendLogin();
-      if (success) {
-        router.push("/home");
-      }
-      
-    } catch (error: any) {
-      if (error.response?.data?.message) {
-        Alert.alert("Erro", error.response.data.message);
-      } else {
-        Alert.alert("Erro", "Erro ao fazer login.");
-      }
+
+    const success = await sendLogin();
+    if (success) {
+      router.push("/home");
     }
   };
-  
+
+  if (loading) {
+    return (
+      <LinearGradient
+        colors={["#FBC02D", "#FA5A02", "#34A853"]}
+        style={styles.loadingContainer}
+      >
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="large" color="#FA5A02" />
+          <Text style={styles.loadingText}>Verificando login...</Text>
+        </View>
+      </LinearGradient>
+    );
+  }
 
   return (
     <LinearGradient
@@ -123,12 +153,7 @@ const LoginScreen = () => {
         {errors.email && <Text style={styles.error}>{errors.email}</Text>}
 
         <View style={styles.inputContainer}>
-          <Ionicons
-            name="mail-outline"
-            size={20}
-            color="#212121"
-            style={styles.icon}
-          />
+          <Ionicons name="mail-outline" size={20} color="#212121" style={styles.icon} />
           <TextInput
             style={styles.input}
             placeholder="E-mail"
@@ -138,15 +163,11 @@ const LoginScreen = () => {
             onChangeText={setEmail}
           />
         </View>
+
         {errors.password && <Text style={styles.error}>{errors.password}</Text>}
 
         <View style={styles.inputContainer}>
-          <Ionicons
-            name="lock-closed-outline"
-            size={20}
-            color="#212121"
-            style={styles.icon}
-          />
+          <Ionicons name="lock-closed-outline" size={20} color="#212121" style={styles.icon} />
           <TextInput
             style={styles.input}
             placeholder="Senha"
@@ -156,9 +177,11 @@ const LoginScreen = () => {
             onChangeText={setPassword}
           />
         </View>
+
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Entrar</Text>
         </TouchableOpacity>
+
         <TouchableOpacity onPress={() => router.push("/register")}>
           <Text style={styles.link}>Criar uma conta</Text>
         </TouchableOpacity>
@@ -234,6 +257,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Poppins-Regular",
     marginBottom: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingCard: {
+    backgroundColor: "#FFF",
+    padding: 30,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 18,
+    fontFamily: "Poppins-Regular",
+    color: "#212121",
   },
 });
 

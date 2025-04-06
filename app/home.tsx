@@ -23,16 +23,14 @@ const loadFonts = async () => {
   });
 };
 
-
 const HomeScreen = () => {
   const router = useRouter();
   const { cart, addToCart } = useCart();
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [search, setSearch] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState<{ id: string; name: string; image: string; price: number; description: string }[]>([]);
-  const [products, setProducts] = useState<{ id: string; name: string; image: string; price: number; description: string }[]>([]);
-  
-  
+  const [filteredProducts, setFilteredProducts] = useState<{ id: number; name: string; image: string; price: number }[]>([]);
+  const [products, setProducts] = useState<{ id: number; name: string; image: string; price: number }[]>([]);
+
   useEffect(() => {
     loadFonts().then(() => setFontsLoaded(true));
   }, []);
@@ -40,7 +38,7 @@ const HomeScreen = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const data: { id: string; name: string; image: string; price: number; description: string }[] = await httpService.get("http://192.168.1.22:3000/api/products");
+        const data = await httpService.get("http://192.168.1.22:3000/api/products"); // ✅ sem headers manuais
         setProducts(data);
       } catch (error) {
         console.error("Erro ao buscar produtos:", error);
@@ -49,27 +47,35 @@ const HomeScreen = () => {
   
     fetchProducts();
   }, []);
-
   
+
   useEffect(() => {
     setFilteredProducts(
       products.filter((product) =>
         product.name.toLowerCase().includes(search.toLowerCase())
       )
     );
-  }, [search, products]); 
-  
-
+  }, [search, products]);
 
   return (
     <View style={styles.container}>
       <SafeAreaView>
         <StatusBar barStyle="dark-content" />
       </SafeAreaView>
-      
+
       <View style={styles.header}>
-        <Image source={require("../assets/images/logo-gomarket.png")} style={styles.logo} />
+        <Image
+          source={require("../assets/images/logo-gomarket.png")}
+          style={styles.logo}
+        />
         <Text style={styles.storeName}>GoMarket</Text>
+
+        <TouchableOpacity
+          style={styles.profileButton}
+          onPress={() => router.push("/profile")}
+        >
+          <Ionicons name="person-circle-outline" size={36} color="#388E3C" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
@@ -122,6 +128,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 20,
+    position: "relative",
   },
   logo: {
     width: 80,
@@ -134,6 +141,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FF5722",
     fontFamily: "Poppins-Bold",
+  },
+  profileButton: {
+    position: "absolute",
+    right: 0,
+    top: 20,
+    padding: 10,
   },
   searchContainer: {
     flexDirection: "row",
@@ -209,6 +222,5 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
 });
-
 
 export default HomeScreen;
