@@ -45,6 +45,7 @@ const ProfileScreen = () => {
         setUser({ name: res.name, email: res.email });
       } catch (error) {
         console.log("Erro ao carregar dados do usuário:", error);
+        console.log("oi");
         Alert.alert("Erro", "Falha ao carregar dados do perfil.");
       } finally {
         setLoading(false);
