@@ -1,180 +1,172 @@
-import React, { useState, useEffect } from "react";
+// app/profile.tsx ou onde você estiver definindo a rota
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
-  Image,
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFonts } from "expo-font";
 import httpService from "./services/httpService";
+
+const SERVER_URL = "http://192.168.1.9:3000";
 
 const ProfileScreen = () => {
   const router = useRouter();
-  const [user, setUser] = useState({ name: "", email: "" });
-  const [password, setPassword] = useState("");
-  const [image, setImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(
+    null
+  );
+
+  const [fontsLoaded] = useFonts({
+    "Poppins-Bold": require("../assets/fonts/Poppins-Bold.ttf"),
+    "Poppins-Regular": require("../assets/fonts/Poppins-Regular.ttf"),
+  });
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const token = await AsyncStorage.getItem("token");
-      const userId = await AsyncStorage.getItem("userId");
+    const loadUserData = async () => {
       try {
-        const response = await httpService.get(
-          `http://192.168.1.22:3000/api/users/${userId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setUser(response);
+        const token = await AsyncStorage.getItem("token");
+        const userId = await AsyncStorage.getItem("userId");
+
+        if (!token || !userId) {
+          Alert.alert("Erro", "Sessão expirada. Faça login novamente.");
+          router.replace("/login");
+          return;
+        }
+
+        const res = await httpService.get(`${SERVER_URL}/api/users/${userId}`);
+        setUser({ name: res.name, email: res.email });
       } catch (error) {
-        console.error("Erro ao buscar usuário:", error);
+        console.log("Erro ao carregar dados do usuário:", error);
+        Alert.alert("Erro", "Falha ao carregar dados do perfil.");
+      } finally {
+        setLoading(false);
       }
     };
-    fetchUser();
+
+    loadUserData();
   }, []);
-
-  const handleImagePick = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-      await uploadImage(result.assets[0].uri);
-    }
-  };
-
-  const uploadImage = async (uri: any) => {
-    const token = await AsyncStorage.getItem("token");
-    const userId = await AsyncStorage.getItem("userId");
-    const formData = new FormData();
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    formData.append("photo", blob, "profile.jpg");
-
-    try {
-      await httpService.post(
-        `http://192.168.1.22:3000/api/users/${userId}/upload-photo`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      Alert.alert("Foto atualizada com sucesso!");
-    } catch (error) {
-      console.error("Erro ao enviar imagem:", error);
-    }
-  };
-
-  const handleUpdate = async () => {
-    const token = await AsyncStorage.getItem("token");
-    const userId = await AsyncStorage.getItem("userId");
-
-    try {
-      await httpService.put(
-        `http://192.168.1.22:3000/api/users/${userId}`,
-        { password },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      Alert.alert("Senha atualizada com sucesso!");
-      setPassword("");
-    } catch (error) {
-      console.error("Erro ao atualizar senha:", error);
-    }
-  };
 
   const handleLogout = async () => {
     await AsyncStorage.clear();
+    Alert.alert("Logout", "Você saiu da sua conta.");
     router.replace("/login");
   };
 
+  if (!fontsLoaded) return null;
+
+  if (loading) {
+    return (
+      <LinearGradient
+        colors={["#FBC02D", "#FA5A02", "#34A853"]}
+        style={styles.loadingContainer}
+      >
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="large" color="#FA5A02" />
+          <Text style={styles.loadingText}>Carregando perfil...</Text>
+        </View>
+      </LinearGradient>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={handleImagePick}>
-        <Image
-          source={image ? { uri: image } : require("../assets/images/avatar.png")}
-          style={styles.avatar}
-        />
-      </TouchableOpacity>
+    <LinearGradient
+      colors={["#FBC02D", "#FA5A02", "#34A853"]}
+      style={styles.container}
+    >
+      <View style={styles.card}>
+        <Ionicons name="person-circle-outline" size={80} color="#FA5A02" />
+        <Text style={styles.name}>{user?.name}</Text>
+        <Text style={styles.email}>{user?.email}</Text>
 
-      <Text style={styles.name}>{user.name}</Text>
-      <Text style={styles.email}>{user.email}</Text>
+        <TouchableOpacity
+          style={[
+            styles.logoutButton,
+            { backgroundColor: "#34A853", marginBottom: 15 },
+          ]}
+          onPress={() => router.push("/editPassword")}
+        >
+          <Text style={styles.logoutText}>Alterar Senha</Text>
+        </TouchableOpacity>
 
-      <TextInput
-        placeholder="Nova senha"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={styles.input}
-      />
-
-      <TouchableOpacity style={styles.button} onPress={handleUpdate}>
-        <Text style={styles.buttonText}>Atualizar Senha</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
-        <Text style={styles.buttonText}>Logout</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Sair</Text>
+        </TouchableOpacity>
+      </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
   },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 20,
+  card: {
+    width: "85%",
+    backgroundColor: "#FFF",
+    padding: 30,
+    borderRadius: 20,
+    alignItems: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
   },
   name: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontFamily: "Poppins-Bold",
+    color: "#212121",
+    marginTop: 15,
   },
   email: {
     fontSize: 16,
-    color: "#555",
-    marginBottom: 20,
-  },
-  input: {
-    width: "100%",
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  button: {
-    backgroundColor: "#388E3C",
-    padding: 12,
-    borderRadius: 8,
-    width: "100%",
-    alignItems: "center",
-    marginBottom: 10,
+    fontFamily: "Poppins-Regular",
+    color: "#757575",
+    marginBottom: 30,
   },
   logoutButton: {
-    backgroundColor: "#D32F2F",
+    width: "100%",
+    height: 50,
+    backgroundColor: "#FA5A02",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 10,
   },
-  buttonText: {
+  logoutText: {
     color: "#FFF",
-    fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 18,
+    fontFamily: "Poppins-Bold",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingCard: {
+    backgroundColor: "#FFF",
+    padding: 30,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 18,
+    fontFamily: "Poppins-Regular",
+    color: "#212121",
   },
 });
 

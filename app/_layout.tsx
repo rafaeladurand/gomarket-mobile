@@ -11,6 +11,7 @@ import SplashScreen from "./splash";
 import { Ionicons } from "@expo/vector-icons";
 import PaymentScreen from "./payment";
 import ProfileScreen from "./profile";
+import EditPassword from "./editPassword";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -99,6 +100,7 @@ const StackNavigator = () => {
       <Stack.Screen name="register" component={RegisterScreen} />
       <Stack.Screen name="payment" component={PaymentScreen} />
       <Stack.Screen name="profile" component={ProfileScreen} />
+      <Stack.Screen name="editPassword" component={EditPassword} />
     </Stack.Navigator>
   );
 };

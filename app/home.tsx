@@ -28,8 +28,8 @@ const HomeScreen = () => {
   const { cart, addToCart } = useCart();
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [search, setSearch] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState<{ id: number; name: string; image: string; price: number }[]>([]);
-  const [products, setProducts] = useState<{ id: number; name: string; image: string; price: number }[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<{ _id: number; name: string; image: string; price: number, description: string }[]>([]);
+  const [products, setProducts] = useState<{ _id: number; name: string; image: string; price: number, description: string }[]>([]);
 
   useEffect(() => {
     loadFonts().then(() => setFontsLoaded(true));
@@ -38,7 +38,7 @@ const HomeScreen = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const data = await httpService.get("http://192.168.1.22:3000/api/products"); // ✅ sem headers manuais
+        const data = await httpService.get("http://192.168.1.9:3000/api/products"); 
         setProducts(data);
       } catch (error) {
         console.error("Erro ao buscar produtos:", error);
@@ -91,7 +91,7 @@ const HomeScreen = () => {
 
       <FlatList
         data={filteredProducts}
-        keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+        keyExtractor={(item, index) => item._id?.toString() || index.toString()}
         numColumns={2}
         contentContainerStyle={styles.listContainer}
         renderItem={({ item }) => (
@@ -99,7 +99,7 @@ const HomeScreen = () => {
             <Image source={{ uri: item.image }} style={styles.image} />
             <Text style={styles.name}>{item.name}</Text>
             <Text style={styles.price}>R$ {item.price.toFixed(2)}</Text>
-            <TouchableOpacity style={styles.button} onPress={() => addToCart(item)}>
+            <TouchableOpacity style={styles.button} onPress={() => addToCart({ ...item, _id: item._id.toString() })}>
               <Ionicons name="add" size={20} color="#FFF" />
             </TouchableOpacity>
           </View>
