@@ -12,6 +12,8 @@ import { Ionicons } from "@expo/vector-icons";
 import PaymentScreen from "./payment";
 import ProfileScreen from "./profile";
 import EditPassword from "./editPassword";
+import ChatScreen from "./chat";
+import ChatIaScreen from "./chatIA";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -101,6 +103,8 @@ const StackNavigator = () => {
       <Stack.Screen name="payment" component={PaymentScreen} />
       <Stack.Screen name="profile" component={ProfileScreen} />
       <Stack.Screen name="editPassword" component={EditPassword} />
+      <Stack.Screen name="chat" component={ChatScreen} />
+      <Stack.Screen name="chatIA" component={ChatIaScreen} />
     </Stack.Navigator>
   );
 };

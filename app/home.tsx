@@ -9,12 +9,15 @@ import {
   SafeAreaView,
   TouchableOpacity,
   StyleSheet,
+  Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Font from "expo-font";
 import { useCart } from "./cartContext";
 import httpService from "./services/httpService";
+import { Animated, Easing } from "react-native";
+
 
 const loadFonts = async () => {
   await Font.loadAsync({
@@ -28,8 +31,25 @@ const HomeScreen = () => {
   const { cart, addToCart } = useCart();
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [search, setSearch] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState<{ _id: number; name: string; image: string; price: number, description: string }[]>([]);
-  const [products, setProducts] = useState<{ _id: number; name: string; image: string; price: number, description: string }[]>([]);
+
+  const [filteredProducts, setFilteredProducts] = useState<
+    {
+      _id: number;
+      name: string;
+      image: string;
+      price: number;
+      description: string;
+    }[]
+  >([]);
+  const [products, setProducts] = useState<
+    {
+      _id: number;
+      name: string;
+      image: string;
+      price: number;
+      description: string;
+    }[]
+  >([]);
 
   useEffect(() => {
     loadFonts().then(() => setFontsLoaded(true));
@@ -38,16 +58,17 @@ const HomeScreen = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const data = await httpService.get("http://192.168.1.9:3000/api/products"); 
+        const data = await httpService.get(
+          "http://192.168.1.9:3000/api/products"
+        );
         setProducts(data);
       } catch (error) {
         console.error("Erro ao buscar produtos:", error);
       }
     };
-  
+
     fetchProducts();
   }, []);
-  
 
   useEffect(() => {
     setFilteredProducts(
@@ -57,29 +78,117 @@ const HomeScreen = () => {
     );
   }, [search, products]);
 
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const slideAnim = useState(new Animated.Value(-500))[0]; 
+  
+  const toggleMenu = () => {
+    if (!isMenuVisible) {
+      setIsMenuVisible(true);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: -500,
+        duration: 300,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: false,
+      }).start(() => setIsMenuVisible(false));
+    }
+  };
+  
+  
+
   return (
     <View style={styles.container}>
       <SafeAreaView>
         <StatusBar barStyle="dark-content" />
       </SafeAreaView>
 
+      <Modal
+        animationType="none"
+        transparent={true}
+        visible={isMenuVisible}
+        onRequestClose={toggleMenu}
+      >
+        <TouchableOpacity style={styles.overlay} onPress={toggleMenu}>
+        <Animated.View style={[styles.menu, { transform: [{ translateX: slideAnim }] }]}>
+
+            <Text style={styles.menuTitle}>Menu</Text>
+
+            <TouchableOpacity
+              style={styles.menuItemContainer}
+              onPress={() => {
+                toggleMenu();
+                router.push("/profile");
+              }}
+            >
+              <Ionicons
+                name="person-outline"
+                size={22}
+                color="#388E3C"
+                style={styles.menuIcon}
+              />
+              <Text style={styles.menuItemText}>Perfil</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItemContainer}
+              onPress={() => {
+                toggleMenu();
+                router.push("/chat");
+              }}
+            >
+              <Ionicons
+                name="help-circle-outline"
+                size={22}
+                color="#388E3C"
+                style={styles.menuIcon}
+              />
+              <Text style={styles.menuItemText}>FAQ</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItemContainer}
+              onPress={() => {
+                toggleMenu();
+                router.push("/chatIA");
+              }}
+            >
+              <Ionicons
+                name="chatbubbles-outline"
+                size={22}
+                color="#388E3C"
+                style={styles.menuIcon}
+              />
+              <Text style={styles.menuItemText}>Chat com IA</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </TouchableOpacity>
+      </Modal>
+
       <View style={styles.header}>
+        <TouchableOpacity style={styles.menuButton} onPress={toggleMenu}>
+          <Ionicons name="menu-outline" size={36} color="#388E3C" />
+        </TouchableOpacity>
+
         <Image
           source={require("../assets/images/logo-gomarket.png")}
           style={styles.logo}
         />
         <Text style={styles.storeName}>GoMarket</Text>
-
-        <TouchableOpacity
-          style={styles.profileButton}
-          onPress={() => router.push("/profile")}
-        >
-          <Ionicons name="person-circle-outline" size={36} color="#388E3C" />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <Ionicons
+          name="search"
+          size={20}
+          color="#666"
+          style={styles.searchIcon}
+        />
         <TextInput
           style={styles.searchBar}
           placeholder="Buscar produto"
@@ -99,7 +208,10 @@ const HomeScreen = () => {
             <Image source={{ uri: item.image }} style={styles.image} />
             <Text style={styles.name}>{item.name}</Text>
             <Text style={styles.price}>R$ {item.price.toFixed(2)}</Text>
-            <TouchableOpacity style={styles.button} onPress={() => addToCart({ ...item, _id: item._id.toString() })}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => addToCart({ ...item, _id: item._id.toString() })}
+            >
               <Ionicons name="add" size={20} color="#FFF" />
             </TouchableOpacity>
           </View>
@@ -109,7 +221,10 @@ const HomeScreen = () => {
       <TouchableOpacity
         style={styles.cartButton}
         onPress={() =>
-          router.push({ pathname: "/cart", params: { cart: JSON.stringify(cart) } })
+          router.push({
+            pathname: "/cart",
+            params: { cart: JSON.stringify(cart) },
+          })
         }
       >
         <Text style={styles.cartText}>Carrinho ({cart.length})</Text>
@@ -142,12 +257,17 @@ const styles = StyleSheet.create({
     color: "#FF5722",
     fontFamily: "Poppins-Bold",
   },
-  profileButton: {
+  faqButton: {
     position: "absolute",
-    right: 0,
+    right: 50,
     top: 20,
     padding: 10,
   },
+  menuButton: {
+    padding: 10,
+    marginRight: 10,
+  },
+  
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -220,6 +340,52 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFF",
     textTransform: "uppercase",
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    flexDirection: "row",
+    justifyContent: "flex-start",
+  },
+  menu: {
+    backgroundColor: "#fff",
+    padding: 20,
+    paddingTop: 60,
+    borderBottomLeftRadius: 20,
+    borderTopLeftRadius: 20,
+    width: "70%",
+    height: "100%",
+    elevation: 10,
+  },
+
+  menuTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#388E3C",
+    marginBottom: 20,
+  },
+  menuItem: {
+    fontSize: 18,
+    marginBottom: 20,
+    color: "#333",
+  },
+
+  menuItemContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    borderRadius: 8,
+  },
+  menuIcon: {
+    marginRight: 12,
+  },
+  menuItemText: {
+    fontSize: 18,
+    color: "#333",
+    fontFamily: "Poppins-Regular",
   },
 });
 

@@ -1,4 +1,3 @@
-// app/profile.tsx ou onde você estiver definindo a rota
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -56,7 +55,7 @@ const ProfileScreen = () => {
 
   const handleLogout = async () => {
     await AsyncStorage.clear();
-    Alert.alert("Logout", "Você saiu da sua conta.");
+    Alert.alert("Você saiu da sua conta!");
     router.replace("/login");
   };
 
