@@ -19,6 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SERVER_URL = "http://192.168.1.9:3000";
 
+
 const PaymentScreen = () => {
   const router = useRouter();
   const { clearCart } = useCart();
