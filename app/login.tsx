@@ -136,8 +136,8 @@ const LoginScreen = () => {
         style={styles.loadingContainer}
       >
         <View style={styles.loadingCard}>
-          <ActivityIndicator size="large" color="#FA5A02" />
-          <Text style={styles.loadingText}>Verificando login...</Text>
+          <ActivityIndicator size="large" color="#FFF" />
+         {/* <Text style={styles.loadingText}>Verificando login...</Text> */}
         </View>
       </LinearGradient>
     );
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingCard: {
-    backgroundColor: "#FFF",
+    backgroundColor: "transparent",
     padding: 30,
     borderRadius: 20,
     alignItems: "center",
@@ -274,11 +274,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
   },
+  
   loadingText: {
     marginTop: 15,
     fontSize: 18,
     fontFamily: "Poppins-Regular",
-    color: "#212121",
+    color: "#FFF",
   },
 });
 

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, Fragment } from "react";
+// ChatScreen.tsx
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -6,6 +7,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
@@ -13,79 +18,88 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Baloon from "./balloon";
 import httpService from "./services/httpService";
 import { io, Socket } from "socket.io-client";
+import { Alert } from "react-native";
 
 const SERVER_URL = "http://192.168.1.9:3000";
 const SOCKET_URL = "http://192.168.1.9:3000";
 
+interface ChatMessage {
+  id: string;
+  content: string;
+  sentBy: string;
+  timestamp?: string;
+}
+
 const ChatScreen = () => {
   const [content, setContent] = useState("");
   const [userName, setUserName] = useState("");
-  interface ChatMessage {
-    content: string;
-    sentBy: string;
-  }
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [typingStatus, setTypingStatus] = useState("");
+  const typingTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const socket = useRef<Socket | null>(null);
+
   const [fontsLoaded] = useFonts({
     "Poppins-Bold": require("../assets/fonts/Poppins-Bold.ttf"),
     "Poppins-Regular": require("../assets/fonts/Poppins-Regular.ttf"),
   });
 
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const socket = useRef<Socket | null>(null);
-
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
         const userId = await AsyncStorage.getItem("userId");
-        console.log("ID do usuário salvo:", userId);
-  
         const user = await httpService.get(`${SERVER_URL}/api/users/${userId}`);
-        console.log("Resposta da API (usuário):", user); 
-  
         setUserName(user.name);
-        console.log("Nome do usuário definido:", user.name);
-         
       } catch (error) {
         console.error("Erro ao obter usuário:", error);
       }
     };
-
     fetchUserInfo();
   }, []);
 
   useEffect(() => {
-    const socket = io(SOCKET_URL);
-  
-    socket.on("connect", () => {
-      console.log("Conectado ao servidor Socket.io");
-  
-      socket.emit("authenticate", userName);
+    const newSocket = io(SOCKET_URL);
+    socket.current = newSocket;
+
+    newSocket.on("connect", () => {
+      newSocket.emit("authenticate", userName);
     });
-  
-    socket.on("authenticated", (userData) => {
-      console.log("Usuário autenticado:", userData);
-      setUserName(userData.name); 
+
+    newSocket.on("authenticated", (userData) => {
+      setUserName(userData.name);
     });
-  
-    socket.on("chat message", (msg) => {
+
+    newSocket.on("chat message", (msg: ChatMessage) => {
       setChatMessages((prev) => [...prev, msg]);
     });
-  
-    socket.on("disconnect", () => {
-      console.log("Desconectado do servidor Socket.io");
+
+    newSocket.on("edit message", (updatedMsg: ChatMessage) => {
+      setChatMessages((prev) =>
+        prev.map((msg) => (msg.id === updatedMsg.id ? updatedMsg : msg))
+      );
     });
-  
+
+    newSocket.on("delete message", (messageId: string) => {
+      setChatMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+    });
+
+    newSocket.on("user typing", (name: string) => {
+      if (name !== userName) {
+        setTypingStatus(`${name} está digitando...`);
+        if (typingTimeout.current) clearTimeout(typingTimeout.current);
+        typingTimeout.current = setTimeout(() => setTypingStatus(""), 3000);
+      }
+    });
+
     return () => {
-      socket.disconnect();
+      newSocket.disconnect();
     };
-  }, [userName]); 
-  
-  
+  }, [userName]);
 
   useEffect(() => {
-    if (userName && socket.current?.connected) {
-      socket.current.emit("authenticate", userName);
-    }
-  }, [userName]);
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  }, [chatMessages]);
 
   const sendMessage = () => {
     if (!content.trim()) return;
@@ -93,57 +107,126 @@ const ChatScreen = () => {
     const message = {
       content: content.trim(),
       sentBy: userName,
+      timestamp: new Date().toISOString(),
     };
 
     socket.current?.emit("chat message", message);
-    setChatMessages((prev) => [...prev, message]);
     setContent("");
   };
 
-  return (
-    <Fragment>
-      <ScrollView contentContainerStyle={styles.scrollViewContainer}>
-        {chatMessages.length > 0 ? (
-          chatMessages.map((m, index) => (
-            <Baloon key={index} message={m} currentUser={userName} />
-          ))
-        ) : (
-          <Text style={styles.emptyMessageText}>Sem mensagens no momento</Text>
-        )}
-      </ScrollView>
+  const handleEdit = (message: ChatMessage) => {
+    Alert.prompt(
+      "Editar mensagem",
+      "Altere o conteúdo da mensagem:",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Salvar",
+          onPress: (newContent) => {
+            if (newContent && newContent.trim()) {
+              socket.current?.emit("edit message", {
+                ...message,
+                content: newContent.trim(),
+              });
+            }
+          },
+        },
+      ],
+      "plain-text",
+      message.content
+    );
+  };
 
-      <SafeAreaView style={styles.messageTextInputContainer}>
-        <TextInput
-          style={styles.messageTextInput}
-          placeholder="Digite sua mensagem"
-          placeholderTextColor="#999"
-          value={content}
-          multiline
-          onChangeText={setContent}
-        />
-        <TouchableOpacity
-          style={styles.sendButton}
-          disabled={!content.trim()}
-          onPress={sendMessage}
-        >
-          <Text style={styles.sendButtonText}>Enviar</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    </Fragment>
+  const handleDelete = (id: string) => {
+    Alert.alert("Excluir mensagem", "Tem certeza que deseja excluir esta mensagem?", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Excluir", style: "destructive", onPress: () => socket.current?.emit("delete message", id) },
+    ]);
+  };
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F3F3F3" }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={{ flex: 1 }}>
+            <ScrollView
+              contentContainerStyle={styles.scrollViewContainer}
+              ref={scrollViewRef}
+              keyboardShouldPersistTaps="handled"
+            >
+              {typingStatus !== "" && (
+                <Text style={styles.typingStatus}>{typingStatus}</Text>
+              )}
+              {chatMessages.length > 0 ? (
+                chatMessages.map((m, index) => (
+                  <Baloon
+                    key={index}
+                    message={m}
+                    currentUser={userName}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                ))
+              ) : (
+                <Text style={styles.emptyMessageText}>Sem mensagens no momento</Text>
+              )}
+            </ScrollView>
+
+            <View style={styles.messageTextInputContainer}>
+              <TextInput
+                style={styles.messageTextInput}
+                placeholder="Digite sua mensagem"
+                placeholderTextColor="#999"
+                value={content}
+                multiline
+                onChangeText={(text) => {
+                  setContent(text);
+                  socket.current?.emit("typing", userName);
+                }}
+              />
+              <TouchableOpacity
+                style={styles.sendButton}
+                disabled={!content.trim()}
+                onPress={sendMessage}
+              >
+                <Text style={styles.sendButtonText}>Enviar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   scrollViewContainer: {
     paddingHorizontal: 12,
-    paddingVertical: 16,
-    paddingBottom: 90,
+    paddingTop: 16,
+    paddingBottom: 100,
+    backgroundColor: "#F3F3F3",
+  },
+  typingStatus: {
+    fontStyle: "italic",
+    color: "#666",
+    fontSize: 13,
+    marginBottom: 10,
+    marginLeft: 4,
+    fontFamily: "Poppins-Regular",
   },
   emptyMessageText: {
     alignSelf: "center",
-    color: "#848484",
-    marginTop: 20,
+    color: "#aaa",
     fontSize: 16,
+    fontFamily: "Poppins-Regular",
+    marginTop: 20,
   },
   messageTextInputContainer: {
     position: "absolute",
@@ -152,25 +235,26 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F9F9F9",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
+    backgroundColor: "#ffffffee",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: -2 },
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: -3 },
+    shadowRadius: 6,
+    elevation: 10,
   },
   messageTextInput: {
     flex: 1,
     minHeight: 40,
     maxHeight: 100,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    fontSize: 16,
+    backgroundColor: "#F5F5F5",
+    borderRadius: 25,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    fontFamily: "Poppins-Regular",
     borderWidth: 1,
     borderColor: "#ddd",
     marginRight: 8,
@@ -178,17 +262,68 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     backgroundColor: "#FA5A02",
-    height: 40,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    height: 44,
+    paddingHorizontal: 20,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 2,
+    shadowColor: "#FA5A02",
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 6,
   },
   sendButtonText: {
     color: "#fff",
     fontWeight: "600",
     fontSize: 15,
+    fontFamily: "Poppins-Bold",
+  },
+  modalContainer: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 15,
+    justifyContent: "center",
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 10,
+    fontFamily: "Poppins-Bold",
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    padding: 10,
+    fontSize: 14,
+    minHeight: 60,
+    textAlignVertical: "top",
+    fontFamily: "Poppins-Regular",
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalButtonCancel: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#999",
+    padding: 10,
+    borderRadius: 8,
+  },
+  modalButtonSave: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FA5A02",
+    padding: 10,
+    borderRadius: 8,
+  },
+  modalButtonText: {
+    color: "#fff",
+    marginLeft: 8,
+    fontFamily: "Poppins-Bold",
   },
 });
 
