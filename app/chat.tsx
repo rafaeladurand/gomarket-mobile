@@ -20,8 +20,8 @@ import httpService from "./services/httpService";
 import { io, Socket } from "socket.io-client";
 import { Alert } from "react-native";
 
-const SERVER_URL = "http://192.168.1.9:3000";
-const SOCKET_URL = "http://192.168.1.9:3000";
+const SERVER_URL = "http://192.168.137.1:3000";
+const SOCKET_URL = "http://192.168.137.1:3000";
 
 interface ChatMessage {
   id: string;

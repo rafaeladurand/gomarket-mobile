@@ -15,7 +15,7 @@ import httpService from "./services/httpService";
 
 const RegisterScreen = () => {
 
-  const SERVER_URL = 'http://192.168.1.9:3000'; // Replace with your server URL - ipconfig - Endereço IPv4
+  const SERVER_URL = 'http://192.168.137.1:3000'; // Replace with your server URL - ipconfig - Endereço IPv4
 
   const router = useRouter();
   const [name, setName] = useState("");

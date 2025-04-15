@@ -59,7 +59,7 @@ const HomeScreen = () => {
     const fetchProducts = async () => {
       try {
         const data = await httpService.get(
-          "http://192.168.1.9:3000/api/products"
+          "http://192.168.137.1:3000/api/products"
         );
         setProducts(data);
       } catch (error) {

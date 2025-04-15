@@ -14,7 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFonts } from "expo-font";
 import httpService from "./services/httpService";
 
-const SERVER_URL = "http://192.168.1.9:3000";
+const SERVER_URL = "http://192.168.137.1:3000";
 
 const ProfileScreen = () => {
   const router = useRouter();
