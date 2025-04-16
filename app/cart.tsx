@@ -22,7 +22,7 @@ const CartScreen = () => {
   const { cart, removeFromCart, clearCart } = useCart();
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
-  const SERVER_URL = "http://192.168.137.1:3000";
+  const SERVER_URL = "http://192.168.1.18:3000";
 
   useEffect(() => {
     const loadFonts = async () => {

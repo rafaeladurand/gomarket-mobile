@@ -1,23 +1,16 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-axios.interceptors.request.use(
-  async (config) => {
-    const token = await AsyncStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  }, 
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+const getAuthHeaders = async () => {
+  const token = await AsyncStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 const service = {
   get: async (url: string) => {
     try {
-      const response = await axios.get(url);
+      const headers = await getAuthHeaders();
+      const response = await axios.get(url, { headers });
       return response.data;
     } catch (error) {
       console.error("Erro ao fazer GET", error);
@@ -27,7 +20,8 @@ const service = {
 
   post: async (url: string, data: any) => {
     try {
-      const response = await axios.post(url, data);
+      const headers = await getAuthHeaders();
+      const response = await axios.post(url, data, { headers });
       return response.data;
     } catch (error) {
       console.error("Erro ao fazer POST", error);
@@ -37,7 +31,8 @@ const service = {
 
   put: async (url: string, data: any) => {
     try {
-      const response = await axios.put(url, data);
+      const headers = await getAuthHeaders();
+      const response = await axios.put(url, data, { headers });
       return response.data;
     } catch (error) {
       console.error("Erro ao fazer PUT", error);
@@ -47,9 +42,10 @@ const service = {
 
   delete: async (url: string) => {
     try {
-      const response = await axios.delete(url);
+      const headers = await getAuthHeaders();
+      const response = await axios.delete(url, { headers });
       return response.data;
-    } catch (error) { 
+    } catch (error) {
       console.error("Erro ao fazer DELETE", error);
       throw error;
     }

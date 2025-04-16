@@ -17,7 +17,7 @@ import { useCart } from "./cartContext";
 import httpService from "./services/httpService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const SERVER_URL = "http://192.168.137.1:3000";
+const SERVER_URL = "http://192.168.1.18:3000";
 
 
 const PaymentScreen = () => {

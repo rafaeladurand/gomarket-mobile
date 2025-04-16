@@ -20,8 +20,8 @@ import httpService from "./services/httpService";
 import { io, Socket } from "socket.io-client";
 import { Alert } from "react-native";
 
-const SERVER_URL = "http://192.168.137.1:3000";
-const SOCKET_URL = "http://192.168.137.1:3000";
+const SERVER_URL = "http://192.168.1.18:3000";
+const SOCKET_URL = "http://192.168.1.18:3000";
 
 interface ChatMessage {
   id: string;
@@ -148,7 +148,7 @@ const ChatScreen = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F3F3F3" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff7ec" }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -156,6 +156,7 @@ const ChatScreen = () => {
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Chat</Text>
             <ScrollView
               contentContainerStyle={styles.scrollViewContainer}
               ref={scrollViewRef}
@@ -207,11 +208,20 @@ const ChatScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  
   scrollViewContainer: {
-    paddingHorizontal: 12,
-    paddingTop: 16,
-    paddingBottom: 100,
-    backgroundColor: "#F3F3F3",
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    backgroundColor: "#fff7ec",
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: "#FA5A02", 
+    textAlign: 'center',
+    marginTop: 65,
+    fontFamily: "Poppins-Regular",
   },
   typingStatus: {
     fontStyle: "italic",
@@ -229,56 +239,42 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   messageTextInputContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffffee",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    padding: 10,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    margin: 10,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: -3 },
-    shadowRadius: 6,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
+    elevation: 3,
   },
   messageTextInput: {
     flex: 1,
-    minHeight: 40,
-    maxHeight: 100,
-    backgroundColor: "#F5F5F5",
-    borderRadius: 25,
+    fontSize: 16,
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    fontSize: 15,
-    fontFamily: "Poppins-Regular",
-    borderWidth: 1,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 16,
     borderColor: "#ddd",
-    marginRight: 8,
-    color: "#333",
+    borderWidth: 1,
+    marginRight: 10,
   },
   sendButton: {
     backgroundColor: "#FA5A02",
-    height: 44,
-    paddingHorizontal: 20,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#FA5A02",
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 6,
-    elevation: 6,
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
   },
   sendButtonText: {
     color: "#fff",
-    fontWeight: "600",
-    fontSize: 15,
+    fontWeight: "bold",
+    fontSize: 16,
     fontFamily: "Poppins-Bold",
   },
+  
   modalContainer: {
     backgroundColor: "#fff",
     padding: 20,
